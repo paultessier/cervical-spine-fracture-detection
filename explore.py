@@ -192,7 +192,7 @@ def show_patient(patient_id,x=0.1):
                     imgs[int((end-start)/2-x*(end+start)/2):int((end-start)/2+x*(end+start)/2)],
     #                 imgs[start:end],
     #                 color_continuous_scale='gray',
-                    cmap='inferno',
+                    # cmap='inferno',
                     animation_frame=0,
                     binary_string=True,
                     labels=dict(animation_frame="slice")
