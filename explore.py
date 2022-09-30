@@ -1,3 +1,4 @@
+# https://www.kaggle.com/getting-started/141256
 
 import numpy as np
 import pandas as pd
@@ -23,10 +24,19 @@ import nibabel as nib
 from glob import glob
 import plotly.express as px
 
+from IPython.display import display_html
+# plt.rcParams.update({'font.size': 16})
+
 # import warnings
 #warnings.filterwarnings("ignore", category=DeprecationWarning)
 #warnings.filterwarnings("ignore", category=UserWarning)
 #warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+# Custom colors
+class clr:
+    S = '\033[1m' + '\033[94m'
+    E = '\033[0m'
 
 
 
@@ -34,10 +44,44 @@ import plotly.express as px
 base_path = "/kaggle/input/rsna-2022-cervical-spine-fracture-detection"
 
 # Load metadata
-train_df = pd.read_csv(f"{base_path}/train.csv")
-train_bbox = pd.read_csv(f"{base_path}/train_bounding_boxes.csv")
-test_df = pd.read_csv(f"{base_path}/test.csv")
-ss = pd.read_csv(f"{base_path}/sample_submission.csv")
+# train_df = pd.read_csv(f"{base_path}/train.csv")
+# train_bbox = pd.read_csv(f"{base_path}/train_bounding_boxes.csv")
+# test_df = pd.read_csv(f"{base_path}/test.csv")
+# ss = pd.read_csv(f"{base_path}/sample_submission.csv")
+
+# ===========================================================================================================================================
+# ==================== READ DATA  ===========================================================================================================
+# ===========================================================================================================================================
+
+def read_data():
+    '''Reads in all .csv files.'''
+    
+    # Load metadata
+    train_df = pd.read_csv(f"{base_path}/train.csv")
+    train_bbox = pd.read_csv(f"{base_path}/train_bounding_boxes.csv")
+    test_df = pd.read_csv(f"{base_path}/test.csv")
+    ss = pd.read_csv(f"{base_path}/sample_submission.csv")
+    
+    return train_df, train_bbox, test_df, ss
+
+def read_folders():
+    '''Reads folders and files. TO DO'''
+    
+    # Load metadata
+    
+    return 1
+
+
+def get_csv_info(csv, name="Default"):
+    '''Prints main information for the speciffied .csv file.'''
+    
+    print(clr.S+f"=== {name} ==="+clr.E)
+    print(clr.S+f"Shape:"+clr.E, csv.shape)
+    print(clr.S+f"Missing Values:"+clr.E, csv.isna().sum().sum(), "total missing datapoints.")
+    print(clr.S+"Columns:"+clr.E, list(csv.columns), "\n")
+    
+    display_html(csv.head())
+    print("\n")
 
 
 def display_metadata():
@@ -46,20 +90,30 @@ def display_metadata():
     print('base_path = {base_path}')
     print('')
 
-    # Print dataframe shapes
-    print('train shape:', train_df.shape)
-    print('train bbox shape:', train_bbox.shape)
-    print('test shape:', test_df.shape)
-    print('ss shape:', ss.shape)
-    print('')
+    # Read in the data
+    train, train_bbox, test, ss = read_data()
 
-    # Show first few entries
-    print('train_df first lines:')
-    display(train_df.head(3))
-    print('train_bbox first lines:')
-    display(train_bbox.head(3))
+    # Print useful information on it
+    for csv, name in zip([train, train_bbox, test, ss],
+                        ["Train", "Train Bbox", "Test", "Sample Submission"]):
+        get_csv_info(csv, name)
+
+# ===========================================================================================================================================
+# ==================== MERGE DATA  ==========================================================================================================
+# ===========================================================================================================================================
+
+def merge_data():
+    '''Merge all data information. TO DO'''
+    
+    # Load metadata
+    
+    
+    return 1
 
 
+# ===========================================================================================================================================
+# ==================== EXPLORE ==============================================================================================================
+# ===========================================================================================================================================
 
 def get_patient_info(patient_id):
 
