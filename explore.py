@@ -2,9 +2,9 @@
 
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
-# %matplotlib inline
-# import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+%matplotlib inline
+import matplotlib.patches as patches
 # import seaborn as sns
 # sns.set(style='darkgrid', font_scale=1.6)
 # import cv2
@@ -14,7 +14,7 @@ import os
 # import gc
 import pydicom
 from pydicom.pixel_data_handlers.util import apply_voi_lut
-# from tqdm import tqdm
+from tqdm import tqdm
 # from pprint import pprint
 # from time import time
 # import itertools
@@ -53,7 +53,7 @@ base_path = "/kaggle/input/rsna-2022-cervical-spine-fracture-detection"
 # ==================== READ DATA  ===========================================================================================================
 # ===========================================================================================================================================
 
-def read_data():
+def read_csv():
     '''Reads in all .csv files.'''
     
     # Load metadata
@@ -64,23 +64,93 @@ def read_data():
     
     return train_df, train_bbox, test_df, ss
 
-def read_folders():
-    '''Reads folders and files. TO DO'''
+def read_dcms(type='train'):
+    '''Reads dcms filenames and store it under a dataframe.
+    type = 'train' or 'test'
+       --> scan either base_path/train_images or base_path/tesf_images
+    '''
+
+    dcms_path = glob(f"{base_path}/{type}_images/*/*.dcm")
+    dcms_df = pd.DataFrame({'path': dcms_path})
+    dcms_df['StudyInstanceUID'] = dcms_df['path'].apply(lambda x:x.split('/')[-2])
+    dcms_df['slice_number'] = dcms_df['path'].apply(lambda x: int(x.split('/')[-1][:-4]))
+    dcms_df = dcms_df[['StudyInstanceUID','slice_number']].sort_values(by=['StudyInstanceUID','slice_number'])
+    # print('dcms_df shape:', dcms_df.shape)
+    # display(dcms_df.head(3))
+    dcms_summary = dcms_df.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'nb_of_slices'})
+    # print('train_imgs_summary shape:', dcms_summary.shape)
+    # display(dcms_summary.head(3))
     
-    # Load metadata
+    return dcms_df, dcms_summary
+
+def read_seg(option='detailed'):
+    '''Reads segmentation filenames and store it under a dataframe.
+    '''
+
+    if option=='detailed':
+
+        patient_id=[]
+        shapes=[]
+        nb_slices=[]
+        # min_max_slices=[]
+        # min_slice=[]
+        # max_slice=[]
+        for dirname, _, files in tqdm(os.walk(f"{base_path}/segmentations")):
+            for filename in files:
+                patient_id.append(filename.replace('.nii',''))
+                nii_example = nib.load(os.path.join(dirname, filename))
+                # Convert to numpy array
+                seg = nii_example.get_fdata()
+                # Align orientation with images
+                shapes.append(seg.shape)
+                nb_slices.append(seg.shape[2])
+                
+                # Align orientation with images
+        #         seg = seg[:, ::-1, ::-1].transpose(2, 1, 0)
+                
+        #         pos=[]
+        #         for i in range(seg.shape[0]):
+        #             arr=list(np.unique(seg[i]).astype('int'))
+        #             arr.pop(0)
+        #             zones = len(arr)
+        #             if zones!=0:
+        #                 if np.min(arr)<=7:
+        #                     pos.append([i,arr])
+                            
+        #         min_max_slices.append([pos[1],pos[-1]])
+        #         min_slice.append(pos[1][0])
+        #         max_slice.append(pos[-1][0])
     
-    return 1
+        seg_df = pd.DataFrame({'StudyInstanceUID':patient_id,
+                                    'mask_shape':shapes,
+                                    'mask_nb_slices':nb_slices,
+                                    'isSegmented':1,
+        #                                'mask_min_max_slices':min_max_slices,
+        #                                'mask_min_slice':min_slice,
+        #                                'mask_max_slice':max_slice
+                                    })
+
+    else:
+
+        # Store segmentation paths in a dataframe
+        seg_paths = glob(f"{base_path}/segmentations/*")
+        seg_df = pd.DataFrame({'path': seg_paths})
+        seg_df['StudyInstanceUID'] = seg_df['path'].apply(lambda x:x.split('/')[-1][:-4])
+        seg_df['isSegmented'] = 1
+        seg_df = seg_df[['StudyInstanceUID','isSegmented']]
+    
+    return seg_df
 
 
-def get_csv_info(csv, name="Default"):
+def get_df_info(df, name="Default"):
     '''Prints main information for the speciffied .csv file.'''
     
     print(clr.S+f"=== {name} ==="+clr.E)
-    print(clr.S+f"Shape:"+clr.E, csv.shape)
-    print(clr.S+f"Missing Values:"+clr.E, csv.isna().sum().sum(), "total missing datapoints.")
-    print(clr.S+"Columns:"+clr.E, list(csv.columns), "\n")
+    print(clr.S+f"Shape:"+clr.E, df.shape)
+    print(clr.S+f"Missing Values:"+clr.E, df.isna().sum().sum(), "total missing datapoints.")
+    print(clr.S+"Columns:"+clr.E, list(df.columns), "\n")
     
-    display_html(csv.head())
+    display_html(df.head())
     print("\n")
 
 
@@ -91,12 +161,12 @@ def display_metadata():
     print('')
 
     # Read in the data
-    train, train_bbox, test, ss = read_data()
+    train, train_bbox, test, ss = read_csv()
 
     # Print useful information on it
-    for csv, name in zip([train, train_bbox, test, ss],
+    for df, name in zip([train, train_bbox, test, ss],
                         ["Train", "Train Bbox", "Test", "Sample Submission"]):
-        get_csv_info(csv, name)
+        get_df_info(df, name)
 
 # ===========================================================================================================================================
 # ==================== MERGE DATA  ==========================================================================================================
@@ -217,3 +287,31 @@ def show_patient(patient_id,slice_range=0.1):
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
     fig.show()
+
+
+
+def plot_fractures(patient_id, nb_columns = 2):
+
+    train_df , train_bbox, _, _  = read_data()
+    
+    bbox= train_bbox[train_bbox.StudyInstanceUID==patient_id]
+    n = len(bbox)
+
+    display(train_df[train_df.StudyInstanceUID==patient_id])
+    
+    fig, axes = plt.subplots(nrows= (n // nb_columns), ncols= nb_columns, figsize=(nb_columns*12,((n // nb_columns)+1)*12))
+    
+    for k,i in enumerate(bbox.index):
+        slice_num=bbox.loc[i,'slice_number']
+        file = pydicom.dcmread(f"{base_path}/train_images/{patient_id}/{slice_num}.dcm")
+        img = apply_voi_lut(file.pixel_array, file)
+        info = train_bbox[(train_bbox['StudyInstanceUID']==patient_id)&(train_bbox['slice_number']==slice_num)]
+        rect = patches.Rectangle((float(info.x), float(info.y)), float(info.width), float(info.height), linewidth=3, edgecolor='r', facecolor='none')
+        
+        ax_id1 = k // nb_columns
+        ax_id2 = k % nb_columns
+        axes[ax_id1,ax_id2].imshow(img, cmap="bone")
+        axes[ax_id1,ax_id2].add_patch(rect)
+#         axes[ax_id1,ax_id2].set_title(f"ID:{patient_id}, Slice: {slice_num}", fontsize=20, weight='bold',y=1.02)
+        axes[ax_id1,ax_id2].set_title(f"Slice:{slice_num}", fontsize=20, weight='bold',y=1.02)
+        axes[ax_id1,ax_id2].axis('off')
