@@ -189,7 +189,7 @@ def show_patient(patient_id,x=0.1):
     
     fig = px.imshow(
     #                 segs[int((end-start)/2-x*(end+start)/2):int((end-start)/2+x*(end+start)/2)]*255,
-                    imgs[int((end-start)/2-x*(end+start)/2):int((end-start)/2+x*(end+start)/2)],
+                    imgs[int((end-start)/2-x/2*(end+start)/2):int((end-start)/2+x/2*(end+start)/2)],
     #                 imgs[start:end],
     #                 color_continuous_scale='gray',
                     # cmap='inferno',
