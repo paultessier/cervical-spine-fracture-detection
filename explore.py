@@ -173,16 +173,32 @@ def display_metadata():
 # ==================== MERGE DATA  ==========================================================================================================
 # ===========================================================================================================================================
 
-def merge_data(bbox,dcms,segs):
+def merge_data(train_df, train_bbox, train_dcms, train_segs):
     '''Merge all data information. TO DO'''
     
     # Load metadata
 
-    train_bbox_summary = bbox.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'fracture_bbox'})
-    dcms_summary = dcms.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'nb_of_slices'})
+    train_bbox_summary = train_bbox.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'fracture_bbox'})
+    dcms_summary = train_dcms.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'nb_of_slices'})
+
+    n=len(train_df)
+    train_df['nb_fractures']=train_df[['C1','C2','C3','C4','C5','C6','C7']].sum(axis=1)
+
+    l1=len(train_df[(train_df.nb_fractures>0) & (train_df.patient_overall==1)])
+    l2=len(train_df[(train_df.nb_fractures==0) & (train_df.patient_overall==0)])
+    l3=len(train_df)
+    check1=(l1+l2==l3)
 
     
-    return 1
+    train_df=pd.merge(train_df,dcms_summary,how='left')
+    train_df=pd.merge(train_df,train_bbox_summary,how='left')
+    train_df=pd.merge(train_df,train_segs,how='left')
+    train_df[['fracture_bbox','mask_nb_slices','isSegmented']]=train_df[['fracture_bbox','mask_nb_slices','isSegmented']].fillna(0).astype('int')
+    check2= (len(train_df)==n)
+
+    print('checks = ',(check1, check2))
+
+    return train_df
 
 
 # ===========================================================================================================================================
@@ -350,7 +366,6 @@ def plot_segmentation(patient_id, slice_start_num=1,batchs_of_18 = 4):
         # Plot the image
         x = (i-start) // 6
         y = (i-start) % 6
-    #     print(x,y)
 
         axes[x, y].imshow(mask, cmap='inferno')
         axes[x, y].set_title(f"Slice: {slice_no}", fontsize=14, weight='bold')
