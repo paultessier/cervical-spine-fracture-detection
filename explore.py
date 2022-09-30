@@ -176,20 +176,32 @@ def get_patient_info(patient_id):
     return dcms, segs, min_max_seg_slices, bbox_coord
 
 
-def show_patient(patient_id,x=0.1):
+def show_patient(patient_id,slice_range=0.1):
+
+    '''
+    Plot patient DCMS and Segmentation images
+    slice_range = % within the segmentation images
+    '''
     
     dcms, segs, min_max_seg_slices, bbox_coord = get_patient_info(patient_id)
-    print(f"min and max of slices segmented: ",min_max_seg_slices)
+
+    if min_max_seg_slices==(0,0):
+        print("No segmentation")
+        start, end = 0, dcms.shape[0]
+    else:
+        print("min and max of slices segmented: ",min_max_seg_slices)
+        start, end = min_max_seg_slices[0], min_max_seg_slices[1]
+    
+    slider_slices = int((end-start)/2-slice_range/2*(end+start)/2),int((end-start)/2+slice_range/2*(end+start)/2)
+    print("slider range (min slice num, max slice num): ",slider_slices)
+
+
     dcms_segmented = segs * dcms
     imgs = np.concatenate([dcms, dcms_segmented],axis =2)
     
-    start = min_max_seg_slices[0]
-    end = min_max_seg_slices[1]
-
-    
     fig = px.imshow(
-    #                 segs[int((end-start)/2-x*(end+start)/2):int((end-start)/2+x*(end+start)/2)]*255,
-                    imgs[int((end-start)/2-x/2*(end+start)/2):int((end-start)/2+x/2*(end+start)/2)],
+                    # segs[slider_slices[0]:slider_slices[1]],
+                    imgs[slider_slices[0]:slider_slices[1]],
     #                 imgs[start:end],
     #                 color_continuous_scale='gray',
                     # cmap='inferno',
