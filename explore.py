@@ -77,11 +77,11 @@ def read_dcms(type='train'):
     dcms_df = dcms_df[['StudyInstanceUID','slice_number']].sort_values(by=['StudyInstanceUID','slice_number'])
     # print('dcms_df shape:', dcms_df.shape)
     # display(dcms_df.head(3))
-    dcms_summary = dcms_df.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'nb_of_slices'})
+    
     # print('train_imgs_summary shape:', dcms_summary.shape)
     # display(dcms_summary.head(3))
     
-    return dcms_df, dcms_summary
+    return dcms_df
 
 def read_seg(option='detailed'):
     '''Reads segmentation files and stores it under a dataframe.
@@ -95,7 +95,8 @@ def read_seg(option='detailed'):
         # min_max_slices=[]
         # min_slice=[]
         # max_slice=[]
-        for dirname, _, files in tqdm(os.walk(f"{base_path}/segmentations")):
+        # for dirname, _, files in tqdm(os.walk(f"{base_path}/segmentations")):
+        for dirname, _, files in os.walk(f"{base_path}/segmentations"):
             for filename in files:
                 patient_id.append(filename.replace('.nii',''))
                 nii_example = nib.load(os.path.join(dirname, filename))
@@ -172,11 +173,14 @@ def display_metadata():
 # ==================== MERGE DATA  ==========================================================================================================
 # ===========================================================================================================================================
 
-def merge_data():
+def merge_data(bbox,dcms,segs):
     '''Merge all data information. TO DO'''
     
     # Load metadata
-    
+
+    train_bbox_summary = bbox.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'fracture_bbox'})
+    dcms_summary = dcms.groupby('StudyInstanceUID').agg({'slice_number':'count'}).reset_index().rename(columns={'slice_number':'nb_of_slices'})
+
     
     return 1
 
@@ -292,7 +296,7 @@ def show_patient(patient_id,slice_range=0.1):
 
 def plot_fractures(patient_id, nb_columns = 2):
 
-    train_df , train_bbox, _, _  = read_data()
+    train_df , train_bbox, _, _  = read_csv()
     
     bbox= train_bbox[train_bbox.StudyInstanceUID==patient_id]
     n = len(bbox)
@@ -315,3 +319,39 @@ def plot_fractures(patient_id, nb_columns = 2):
 #         axes[ax_id1,ax_id2].set_title(f"ID:{patient_id}, Slice: {slice_num}", fontsize=20, weight='bold',y=1.02)
         axes[ax_id1,ax_id2].set_title(f"Slice:{slice_num}", fontsize=20, weight='bold',y=1.02)
         axes[ax_id1,ax_id2].axis('off')
+
+
+def plot_segmentation(patient_id, slice_start_num=1,batchs_of_18 = 4):
+
+    start=slice_start_num
+
+    ex_path2 = f"{base_path}/segmentations/{patient_id}.nii"
+    nii_example = nib.load(ex_path2)
+
+    # Convert to numpy array
+    seg = nii_example.get_fdata()
+    print(seg.shape)
+
+    # Align orientation with images
+    seg = seg[:, ::-1, ::-1].transpose(2, 1, 0)
+    print(seg.shape)
+    n=seg.shape[0] # number of slices
+
+    # Plot images
+    fig, axes = plt.subplots(nrows=3*batchs_of_18, ncols=6, figsize=(24,12*batchs_of_18))
+    fig.suptitle(f'ID: {patient_id}', weight="bold", size=20)
+
+    pos=[]
+    for i in range(start,start+18*batchs_of_18):
+        mask = seg[i]
+        slice_no = i
+        pos.append(np.unique(seg[i]))
+
+        # Plot the image
+        x = (i-start) // 6
+        y = (i-start) % 6
+    #     print(x,y)
+
+        axes[x, y].imshow(mask, cmap='inferno')
+        axes[x, y].set_title(f"Slice: {slice_no}", fontsize=14, weight='bold')
+        axes[x, y].axis('off')
