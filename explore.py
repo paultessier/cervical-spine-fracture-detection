@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-%matplotlib inline
+# %matplotlib inline
 import matplotlib.patches as patches
 # import seaborn as sns
 # sns.set(style='darkgrid', font_scale=1.6)
@@ -54,7 +54,7 @@ base_path = "/kaggle/input/rsna-2022-cervical-spine-fracture-detection"
 # ===========================================================================================================================================
 
 def read_csv():
-    '''Reads in all .csv files.'''
+    '''Reads all .csv files.'''
     
     # Load metadata
     train_df = pd.read_csv(f"{base_path}/train.csv")
@@ -65,7 +65,7 @@ def read_csv():
     return train_df, train_bbox, test_df, ss
 
 def read_dcms(type='train'):
-    '''Reads dcms filenames and store it under a dataframe.
+    '''Reads dcms filenames and stores it under a dataframe.
     type = 'train' or 'test'
        --> scan either base_path/train_images or base_path/tesf_images
     '''
@@ -84,7 +84,7 @@ def read_dcms(type='train'):
     return dcms_df, dcms_summary
 
 def read_seg(option='detailed'):
-    '''Reads segmentation filenames and store it under a dataframe.
+    '''Reads segmentation files and stores it under a dataframe.
     '''
 
     if option=='detailed':
