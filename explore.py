@@ -43,11 +43,6 @@ class clr:
 # Base path
 base_path = "/kaggle/input/rsna-2022-cervical-spine-fracture-detection"
 
-# Load metadata
-# train_df = pd.read_csv(f"{base_path}/train.csv")
-# train_bbox = pd.read_csv(f"{base_path}/train_bounding_boxes.csv")
-# test_df = pd.read_csv(f"{base_path}/test.csv")
-# ss = pd.read_csv(f"{base_path}/sample_submission.csv")
 
 # ===========================================================================================================================================
 # ==================== READ DATA  ===========================================================================================================
@@ -174,7 +169,7 @@ def display_metadata():
 # ===========================================================================================================================================
 
 def merge_data(train_df, train_bbox, train_dcms, train_segs):
-    '''Merge all data information. TO DO'''
+    '''Merge all data information.'''
     
     # Load metadata
 
@@ -346,11 +341,11 @@ def plot_segmentation(patient_id, slice_start_num=1,batchs_of_18 = 4):
 
     # Convert to numpy array
     seg = nii_example.get_fdata()
-    print(seg.shape)
+    # print(seg.shape)
 
     # Align orientation with images
     seg = seg[:, ::-1, ::-1].transpose(2, 1, 0)
-    print(seg.shape)
+    # print(seg.shape)
     n=seg.shape[0] # number of slices
 
     # Plot images
